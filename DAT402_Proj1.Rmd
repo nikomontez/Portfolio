@@ -1,0 +1,169 @@
+---
+title: "Naive Bayes Demo - Project 1"
+author: "Niko Montez Graham"
+date: "2024-05-31"
+output: pdf_document
+---
+## Importing Libraries and Setting the Seed
+```{r}
+library(caTools)
+library(e1071)
+set.seed(42)
+```
+
+## Reading and Cleaning Data 
+```{r}
+NBdata <- read.csv('/Users/nikomg24/NBcustomer_data.csv')
+summary(NBdata)
+```
+```{r}
+head(NBdata, 5)
+```
+
+- Now that we have an idea of what kind of data we are looking into, lets make sure the data is clean and free form null values: 
+```{r}
+colSums(is.na(NBdata))
+```
+- Luckily, no instances need to be dropped in this case! Now, we can move on to the next phase of the Naive Bayes method. 
+
+## Displaying Target Varible as Categorical 
+```{r}
+NBdata$Purchase <- as.factor(NBdata$Purchase)
+summary(NBdata$Purchase)
+```
+- Now that the target variable is in this form, we can now begin the next step in this process!
+
+## Splitting the Data
+```{r}
+mask = sample.split(NBdata$Purchase, SplitRatio = 0.80)
+str(mask)
+```
+```{r}
+traindata <- subset(NBdata, mask == TRUE)
+testdata <- subset(NBdata, mask == FALSE)
+```
+- Perfect! Now that we have our train and testing data, we can move on to the final few steps of the process!
+
+## Creating the Naive Bayes Model
+- In my project, I will be creating a few different models in order to see which variables lead to more accurate predictions of the classifier. Let's create those now:
+```{r}
+model1 <- naiveBayes(x = traindata[,c('Visits','Product_Views')], y = traindata$Purchase)
+model2 <- naiveBayes(x = traindata[,c('Age','Income')], y = traindata$Purchase)
+model3 <- naiveBayes(x = traindata[,c('Income','Product_Views')], y = traindata$Purchase)
+ypred1 <- predict(model1, newdata = testdata[,c('Visits','Product_Views')])
+ypred2 <- predict(model2, newdata = testdata[,c('Age','Income')])
+ypred3 <- predict(model3, newdata = testdata[,c('Income','Product_Views')])
+```
+
+## Plotting the Test Data for Each Model 
+```{r}
+data = testdata
+
+minX1 = min(data[,4]); maxX1 = max(data[,4]); range1 = diff(range(data[,4]))
+minX2 = min(data[,6]); maxX2 = max(data[,6]); range2 = diff(range(data[,6]))
+len = 120
+X1 = seq(from=minX1-0.1*range1, to=maxX1+0.1*range1, length.out=len)
+X2 = seq(from=minX2-0.1*range2, to=maxX2+0.1*range2, length.out=len)
+
+grid_data = expand.grid(X1, X2)  
+colnames(grid_data) = c("Visits", "Product_Views")
+
+y_grid = predict(model1, newdata = grid_data)
+par(mar=c(4,4,1,4)) 
+plot(data[,c("Visits", "Product_Views")],
+     main = "Purchase Classification",
+     xlab = "Visits", ylab = "Product Views",
+     xlim = range(X1), ylim = range(X2))
+
+points(grid_data, pch = '.', col = rgb(0,0,0,alpha=0.5))
+points(data[data$Purchase == "Yes", c("Visits", "Product_Views")], pch = 21, bg = "green4")
+points(data[data$Purchase != "Yes", c("Visits", "Product_Views")], pch = 21, bg = "red3")
+par(mar=c(4,4,1,4)) 
+plot(data[,c('Visits','Product_Views')],
+     main = "Purchase Classification",
+     xlab = "Visits", ylab = "Product Views",
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_data[y_grid == "Yes",], pch = '.', col = "green3")
+points(grid_data[y_grid != "Yes",], pch = '.', col = "red")
+points(data[data$Purchase == "Yes", c('Visits','Product_Views')], pch = 21, bg = "green4")
+points(data[data$Purchase != "Yes", c('Visits','Product_Views')], pch = 21, bg = "red3")
+```
+```{r}
+data = testdata
+
+minX1 = min(data[,1]); maxX1 = max(data[,1]); range1 = diff(range(data[,1]))
+minX2 = min(data[,3]); maxX2 = max(data[,3]); range2 = diff(range(data[,3]))
+len = 120
+X1 = seq(from=minX1-0.1*range1, to=maxX1+0.1*range1, length.out=len)
+X2 = seq(from=minX2-0.1*range2, to=maxX2+0.1*range2, length.out=len)
+
+grid_data = expand.grid(X1, X2)  
+colnames(grid_data) = c('Age','Income')
+
+y_grid = predict(model2, newdata = grid_data)
+par(mar=c(4,4,1,4)) 
+plot(data[,c('Age','Income')],
+     main = "Purchase Classification",
+     xlab = "Age", ylab = "Income",
+     xlim = range(X1), ylim = range(X2))
+
+points(grid_data, pch = '.', col = rgb(0,0,0,alpha=0.5))
+points(data[data$Purchase == "Yes", c('Age','Income')], pch = 21, bg = "green4")
+points(data[data$Purchase != "Yes", c('Age','Income')], pch = 21, bg = "red3")
+par(mar=c(4,4,1,4)) 
+plot(data[,c('Age','Income')],
+     main = "Purchase Classification",
+     xlab = "Age", ylab = "Income",
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_data[y_grid == "Yes",], pch = '.', col = "green3")
+points(grid_data[y_grid != "Yes",], pch = '.', col = "red")
+points(data[data$Purchase == "Yes", c('Age','Income')], pch = 21, bg = "green4")
+points(data[data$Purchase != "Yes", c('Age','Income')], pch = 21, bg = "red3")
+```
+```{r}
+data = testdata
+
+minX1 = min(data[,3]); maxX1 = max(data[,3]); range1 = diff(range(data[,3]))
+minX2 = min(data[,6]); maxX2 = max(data[,6]); range2 = diff(range(data[,6]))
+len = 120
+X1 = seq(from=minX1-0.1*range1, to=maxX1+0.1*range1, length.out=len)
+X2 = seq(from=minX2-0.1*range2, to=maxX2+0.1*range2, length.out=len)
+
+grid_data = expand.grid(X1, X2)  
+colnames(grid_data) = c('Income','Product_Views')
+
+y_grid = predict(model3, newdata = grid_data)
+par(mar=c(4,4,1,4)) 
+plot(data[,c('Income','Product_Views')],
+     main = "NBdata (Training Data)",
+     xlab = "Income", ylab = "Product Views",
+     xlim = range(X1), ylim = range(X2))
+
+points(grid_data, pch = '.', col = rgb(0,0,0,alpha=0.5))
+points(data[data$Purchase == "Yes", c('Income','Product_Views')], pch = 21, bg = "green4")
+points(data[data$Purchase != "Yes", c('Income','Product_Views')], pch = 21, bg = "red3")
+par(mar=c(4,4,1,4)) 
+plot(data[,c('Income','Product_Views')],
+     main = "Purchase Classification",
+     xlab = "Income", ylab = "Product Views",
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_data[y_grid == "Yes",], pch = '.', col = "green3")
+points(grid_data[y_grid != "Yes",], pch = '.', col = "red")
+points(data[data$Purchase == "Yes", c('Income','Product_Views')], pch = 21, bg = "green4")
+points(data[data$Purchase != "Yes", c('Income','Product_Views')], pch = 21, bg = "red3")
+```
+
+
+## Confusion Matrices
+```{r}
+confM1 = table(testdata[ ,"Purchase"], ypred1)
+confM2 = table(testdata[ ,"Purchase"], ypred2)
+confM3 = table(testdata[ ,"Purchase"], ypred3)
+confM1
+confM2
+confM3
+```
+As we can see from the matrices, the third model produced the most accurate predictions, only improperly predicting 6/40. This is information that could be very helpful for the business when trying to ensure a purchase be made more often by customers that use the site. 
